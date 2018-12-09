@@ -1,20 +1,23 @@
 # import default libs
-import os.path
-import urllib.request
+import sys, os.path
+import importlib
+import re
 import json
+import urllib.request
+import webbrowser as vivaldi
 from types import SimpleNamespace as Namespace # from argparse import Namespace
 from base64 import b64decode,b64encode
 # import additional libs
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP as PKCS1_OAEP
+# import configs
+import config
 
 ## AICC is a company that has been working from time immemorial
 #  when the RAM in the PC was barely enough for the consoled chrome
 #  so among the deadly sins in their corporate RFC is
 ## print(bro, please add a fun about vars and glutteny")
 
-# conf
-access_token = ''
 
 class messageList(list):
 	def __init__(self):
@@ -28,53 +31,63 @@ class messageList(list):
 
 # system magic
 def json2obj(data): return json.loads(data, object_hook=lambda bazat: Namespace(**bazat))
-# def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
-# def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
+
+def reread_config():
+	importlib.reload(config)
+
+def token_exist():
+	return True if (hasattr(config, "access_token")) else False
+
+def token_set():		
+	if not input("Open settings? (Y/n): ").lower().strip()[:1] == "y": sys.exit(1)
+	vivaldi.open('https://github.com/settings/tokens/')
+	access_token = input('Paste your token: ')
+	token_pattern = "^[a-z0-9]{40}$"
+	if (re.compile(token_pattern).match(access_token)): 
+		# half-kostyle
+		with open('config.py', 'a') as cfg:
+			cfg.write(f'\naccess_token = \'{access_token}\'')
+		print('Token successfully saved')
+	else:
+		print('Token\'s format is incorrect. ')
+		token_set()
 
 def selfkey_exist():
 	private_file 	= './keys/__self__/private.pem'
 	return os.path.isfile(private_file)
 
 def selfkey_generate():
-	public_file 	= './keys/__self__/public.pem'
-	private_file 	= './keys/__self__/private.pem'
+	if not input("Generate keypare? (Y/n): ").lower().strip()[:1] == "y": sys.exit(1)
+	#
 	key = RSA.generate(2048)
 	private_key = key.export_key()
-	open(private_file, "wb").write(private_key)
 	public_key = key.publickey().export_key()
-	open(public_file, "wb").write(public_key)
+	open(config.private_file, "wb").write(private_key)
+	open(config.public_file, "wb").write(public_key)
+	#
+	print('RSA keypare successfully generated')
 	
-def main():
-	if (selfkey_exist()):
-		mode = input('Post / Load: ')
-		# switch case break foo bazat lorem ipsum
-		if (mode == 'Post'): CreateMessage()
-		if (mode == 'Load'): LoadMessages()
-	else:
-		print('Selfkeys don\'t found.\nGenerating.....')
-		selfkey_generate()
-		main()
-
 def CreateMessage():
 	# send public_2 over GitHub (recipient)
 	message = input('Private message text: ')
 	# secure encode
 	eMessage = Encrypt(message)
 	# github api write comment
-	link = PostMessage(access_token, eMessage)
+	link = PostMessage(config.issue_id['enc_msgs'], config.access_token, eMessage)
 	print(link)
 	
 def LoadMessages():
 	# github api parse comment
-	eMessages = GetMessages(access_token)
+	eMessages = GetMessages(config.issue_id['enc_msgs'], config.access_token)
 	# decode in loop
 	messages = messageList()
+	# javascriptostailovie zamashki onelove
 	{ messages.add(eMessage.user.login, Decrypt(eMessage.body), eMessage.created_at) for eMessage in eMessages }
 	print(messages)
 
 # 
-def GetMessages(access_token):
-	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/3/comments?access_token={access_token}'
+def GetMessages(enc_msgs, access_token):
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?access_token={access_token}'
 	req = urllib.request.Request(url)
 	try: res = urllib.request.urlopen(req)
 	except urllib.error.URLError as e:
@@ -82,9 +95,9 @@ def GetMessages(access_token):
 	return json2obj(res.read())
 	# tmp = commentList(req.read())
 
-#
-def PostMessage(access_token, eMessage):
-	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/3/comments?access_token={access_token}'
+# 
+def PostMessage(enc_msgs, access_token, eMessage):
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?access_token={access_token}'
 	msg = json.dumps({"body": eMessage})
 	msg = msg.encode('utf-8') 										# string to bytes
 	req = urllib.request.Request(url, msg)
@@ -118,6 +131,29 @@ def Decrypt(eMessage):
 	except:
 		message = f'! {eMessage}'
 	return message
+
+# general algorithm
+def main():
+	if not (True): pass
+	#
+	elif not (token_exist()):
+		print('Access token don\'t found.\nBro, please:\n0. Open settings of "Personal access tokens"\n1. Generate new token\n2. Check "write:discussion", "public_repo"\n3. Copy&Paste below')
+		token_set()
+		reread_config()
+		main()
+	elif not (selfkey_exist()):
+		print('Selfkeys don\'t found.\nGenerating.....')
+		selfkey_generate()
+		reread_config()
+		main()
+	else:
+		mode = input('Post / Load / Exit / Quit / Close: ')
+		# switch case break foo bazat lorem ipsum
+		if (mode == 'Post'): 	CreateMessage()
+		if (mode == 'Load'): 	LoadMessages()
+		if (mode == 'Exit'): 	sys.exit(1)
+		if (mode == 'Quit'): 	sys.exit(1)
+		if (mode == 'Close'): sys.exit(1)
 
 if __name__ == '__main__':
 	main()
