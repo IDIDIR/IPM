@@ -16,10 +16,10 @@ import config
 ## AICC is a company that has been working from time immemorial
 #  when the RAM in the PC was barely enough for the consoled chrome
 #  so among the deadly sins in their corporate RFC is
-## print(bro, please add a fun about vars and glutteny")
+## comingsoon
 
-
-class messageList(list):
+#
+class MessageList(list):
 	def __init__(self):
 		self = list()
 	def add(self, name, text, date):
@@ -28,6 +28,17 @@ class messageList(list):
 			'text': text,
 			'date': date
 		})
+
+# 
+class Roster(dict):
+	def __init__(self):
+		self = dict()
+	def add(self, name, public_key):
+		self[name] = public_key
+
+# GLOBALS
+SELFNAME = ''
+CONTACTS = Roster()
 
 # system magic
 def json2obj(data): return json.loads(data, object_hook=lambda bazat: Namespace(**bazat))
@@ -53,7 +64,7 @@ def token_set():
 		token_set()
 
 def selfkey_exist():
-	private_file 	= './keys/__self__/private.pem'
+	private_file 	= './keys/private.pem'
 	return os.path.isfile(private_file)
 
 def selfkey_generate():
@@ -65,29 +76,36 @@ def selfkey_generate():
 	open(config.private_file, "wb").write(private_key)
 	open(config.public_file, "wb").write(public_key)
 	#
+	# print(private_key)
+	PostPublic(config.issue_id['pub_keys'], config.access_token, public_key.decode('utf-8'))
+	#
 	print('RSA keypare successfully generated')
-	
-def CreateMessage():
-	# send public_2 over GitHub (recipient)
-	message = input('Private message text: ')
-	# secure encode
-	eMessage = Encrypt(message)
-	# github api write comment
-	link = PostMessage(config.issue_id['enc_msgs'], config.access_token, eMessage)
-	print(link)
-	
-def LoadMessages():
-	# github api parse comment
-	eMessages = GetMessages(config.issue_id['enc_msgs'], config.access_token)
-	# decode in loop
-	messages = messageList()
-	# javascriptostailovie zamashki onelove
-	{ messages.add(eMessage.user.login, Decrypt(eMessage.body), eMessage.created_at) for eMessage in eMessages }
-	print(messages)
 
-# 
-def GetMessages(enc_msgs, access_token):
-	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?access_token={access_token}'
+# github api add comment to enc_msgs issue
+def PostPublic(pub_keys, access_token, public_key):
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{pub_keys}/comments?access_token={access_token}'
+	msg = json.dumps({"body": public_key})
+	msg = msg.encode('utf-8') 										# string to bytes
+	req = urllib.request.Request(url, msg)
+	try: res = urllib.request.urlopen(req)
+	except urllib.error.URLError as e:
+		print(e.reason)
+	return 'oke'
+
+def roster_init():
+	global SELFNAME
+	SELFNAME = GetUsername(config.access_token).login # return False
+	eContacts = GetContacts(config.issue_id['pub_keys'], config.access_token) # return False
+	# javascriptostailovie zamashki onelove
+	{ CONTACTS.add(eContact.user.login, eContact.body) for eContact in eContacts }
+	# print(CONTACTS)
+	#
+	print('Your contacts was loaded')
+	return True
+
+# github api get username
+def GetUsername(access_token):
+	url = f'https://api.github.com/user?access_token={access_token}'
 	req = urllib.request.Request(url)
 	try: res = urllib.request.urlopen(req)
 	except urllib.error.URLError as e:
@@ -95,7 +113,75 @@ def GetMessages(enc_msgs, access_token):
 	return json2obj(res.read())
 	# tmp = commentList(req.read())
 
-# 
+# github api load comment in pub_keys issue
+def GetContacts(pub_keys, access_token):
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{pub_keys}/comments?access_token={access_token}'
+	req = urllib.request.Request(url)
+	try: res = urllib.request.urlopen(req)
+	except urllib.error.URLError as e:
+		print(e.reason)
+	return json2obj(res.read())
+	# tmp = commentList(req.read())
+
+def CreateMessage():
+	receiver = ChooseContact(CONTACTS)
+	# message header
+	header = f'@{receiver}\n'
+	# send public_2 over GitHub (recipient)
+	message = input('Private message text: ')
+	# secure encode
+	eMessage = Encrypt(message)
+	# github api write comment
+	link = PostMessage(config.issue_id['enc_msgs'], config.access_token, header + eMessage)
+	print(link)
+
+def LoadMessages():
+	sender = ChooseContact(CONTACTS)
+	# message header
+	header = f'@{SELFNAME}\n'
+	# select contact
+	# github api parse comment
+	# need pagination fix
+	AllEMessages = GetMessages(config.issue_id['enc_msgs'], config.access_token)
+	MyEMessages = []
+	# decode in loop
+	MyMessages = MessageList()
+	for eMessage in AllEMessages:
+		if (eMessage.user.login == sender) & (header in eMessage.body):
+			eMessage.body = eMessage.body.replace(header, '')
+			MyEMessages.append(eMessage)
+	# javascriptostailovie zamashki onelove
+	{ MyMessages.add(eMessage.user.login, Decrypt(eMessage.body), eMessage.created_at) for eMessage in MyEMessages }
+	#
+	ShowMessages(MyMessages, sender)
+
+#
+def ShowMessages(messages, sender):
+	print(f'From: {sender}')
+	{ print(f'{message["date"]}\t{message["text"]}') for message in messages }
+
+# func for refact
+def	ChooseContact(contacts):
+	print('Your registred contacts:')
+	# javascriptostailovie zamashki onelove
+	{ print(sender, end = ' / ') for sender in CONTACTS }
+	print('back')	# kostyle
+	username = input('Enter name of your contact: ')
+	if(username == 'back'): main()
+	return username
+
+# github api load comment in enc_msgs issue
+def GetMessages(enc_msgs, access_token):
+	# need pagination fix
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?page=2&access_token={access_token}'
+	req = urllib.request.Request(url)
+	try: res = urllib.request.urlopen(req)
+	except urllib.error.URLError as e:
+		print(e.reason)
+	return json2obj(res.read())
+	# tmp = commentList(req.read())
+
+# github api add comment to enc_msgs issue
 def PostMessage(enc_msgs, access_token, eMessage):
 	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?access_token={access_token}'
 	msg = json.dumps({"body": eMessage})
@@ -108,8 +194,10 @@ def PostMessage(enc_msgs, access_token, eMessage):
 
 # encrypt single message with public_2 (sender)
 def Encrypt(message):
-	public_file = "./keys/bazad2/public.pem"
-	public_key = open(public_file,"r").read()
+	# more corrected load public, no read local
+	# public_file = "./keys/public.pem"
+	# public_key = open(public_file,"r").read()
+	public_key = CONTACTS[SELFNAME]
 	public_key = RSA.importKey(public_key)
 	public_key = PKCS1_OAEP.new(public_key)
 	eMessage = message.encode('utf-8')						# 0
@@ -120,7 +208,7 @@ def Encrypt(message):
 
 # decrypt single message with private_2 (recipient)
 def Decrypt(eMessage):
-	private_key = "./keys/bazad2/private.pem"
+	private_key = config.private_file
 	private_file = open(private_key,"r").read()
 	private_key = RSA.importKey(private_file)
 	private_key = PKCS1_OAEP.new(private_key)
@@ -142,18 +230,23 @@ def main():
 		reread_config()
 		main()
 	elif not (selfkey_exist()):
-		print('Selfkeys don\'t found.\nGenerating.....')
+		print('Selfkeys don\'t found.')
 		selfkey_generate()
 		reread_config()
 		main()
+	elif not (roster_init()):
+		print('Contacts haven\'t been loaded.')
+		input()
+		main()
 	else:
-		mode = input('Post / Load / Exit / Quit / Close: ')
+		mode = input('Post / Load / Exit / Quit / Close / Kill: ').lower()
 		# switch case break foo bazat lorem ipsum
-		if (mode == 'Post'): 	CreateMessage()
-		if (mode == 'Load'): 	LoadMessages()
-		if (mode == 'Exit'): 	sys.exit(1)
-		if (mode == 'Quit'): 	sys.exit(1)
-		if (mode == 'Close'): sys.exit(1)
+		if (mode == 'post'): 	CreateMessage()
+		if (mode == 'load'): 	LoadMessages()
+		if (mode == 'exit'): 	sys.exit(1)
+		if (mode == 'quit'): 	sys.exit(1)
+		if (mode == 'close'): sys.exit(1)
+		if (mode == 'kill'): 	sys.exit(1)
 
 if __name__ == '__main__':
 	main()
