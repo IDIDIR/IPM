@@ -173,7 +173,7 @@ def	ChooseContact(contacts):
 # github api load comment in enc_msgs issue
 def GetMessages(enc_msgs, access_token):
 	# need pagination fix
-	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?page=2&access_token={access_token}'
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?page=3&access_token={access_token}'
 	req = urllib.request.Request(url)
 	try: res = urllib.request.urlopen(req)
 	except urllib.error.URLError as e:
