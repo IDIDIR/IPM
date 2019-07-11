@@ -48,7 +48,7 @@ def reread_config():
 	importlib.reload(config)
 
 def token_exist():
-	return True if (hasattr(config, "access_token")) else False
+	return True if (config.access_token!="") else False
 
 def token_set():		
 	if not input("Open settings? (Y/n): ").lower().strip()[:1] == "y": sys.exit(1)
