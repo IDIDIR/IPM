@@ -3,6 +3,7 @@ import sys, os.path
 import importlib
 import re
 import json
+# import logging
 import urllib.request
 import webbrowser as vivaldi
 from types import SimpleNamespace as Namespace # from argparse import Namespace
@@ -68,7 +69,7 @@ def selfkey_exist():
 	return os.path.isfile(private_file)
 
 def selfkey_generate():
-	if not input("Generate keypare? (Y/n): ").lower().strip()[:1] == "y": sys.exit(1)
+	if not input("Generate keypare? (y/N): ").lower().strip()[:1] == "y": sys.exit(1)
 	#
 	key = RSA.generate(2048)
 	private_key = key.export_key()
@@ -168,12 +169,15 @@ def	ChooseContact(contacts):
 	print('back')	# kostyle
 	username = input('Enter name of your contact: ')
 	if(username == 'back'): main()
+	if(username not in CONTACTS):
+		print('Invalid username, check case and vse ostal\'noe')
+		ChooseContact(CONTACTS)
 	return username
 
 # github api load comment in enc_msgs issue
 def GetMessages(enc_msgs, access_token):
 	# need pagination fix
-	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?page=3&access_token={access_token}'
+	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{enc_msgs}/comments?page=0&per_page=65535&access_token={access_token}'
 	req = urllib.request.Request(url)
 	try: res = urllib.request.urlopen(req)
 	except urllib.error.URLError as e:
