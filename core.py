@@ -128,6 +128,9 @@ def GetContacts(pub_keys, access_token):
 
 def CreateMessage():
 	receiver = ChooseContact(CONTACTS)
+	while receiver is False:
+		print('Invalid username, check case and vse ostal\'noe')
+		receiver = ChooseContact(CONTACTS)
 	# message header
 	header = f'@{receiver}\n'
 	# send public_2 over GitHub (recipient)
@@ -140,6 +143,9 @@ def CreateMessage():
 
 def LoadMessages():
 	sender = ChooseContact(CONTACTS)
+	while sender is False:
+		print('Invalid username, check case and vse ostal\'noe')
+		sender = ChooseContact(CONTACTS)
 	# message header
 	header = f'@{SELFNAME}\n'
 	# select contact
@@ -172,9 +178,9 @@ def	ChooseContact(contacts):
 	username = input('Enter name of your contact: ')
 	if(username == 'back'): main()
 	if(username not in CONTACTS):
-		print('Invalid username, check case and vse ostal\'noe')
-		ChooseContact(CONTACTS)
-	return username
+		return False
+	else:
+		return username
 
 # github api load comment in enc_msgs issue
 def GetMessages(enc_msgs, access_token):
