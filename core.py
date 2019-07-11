@@ -51,7 +51,7 @@ def token_exist():
 	return True if (config.access_token!="") else False
 
 def token_set():		
-	if not input("Open settings? (Y/n): ").lower().strip()[:1] == "y": sys.exit(1)
+	if not input("Open settings? (y/N): ").lower().strip()[:1] == "y": sys.exit(1)
 	vivaldi.open('https://github.com/settings/tokens/')
 	access_token = input('Paste your token: ')
 	token_pattern = "^[a-z0-9]{40}$"
@@ -77,16 +77,18 @@ def selfkey_generate():
 	open(config.private_file, "wb").write(private_key)
 	open(config.public_file, "wb").write(public_key)
 	#
-	# print(private_key)
-	PostPublic(config.issue_id['pub_keys'], config.access_token, public_key.decode('utf-8'))
-	#
 	print('RSA keypare successfully generated')
+	
+def selfkey_publish():
+	public_key = open(config.public_file, "r").read()
+	PostPublic(config.issue_id['pub_keys'], config.access_token, public_key)
 
 # github api add comment to enc_msgs issue
 def PostPublic(pub_keys, access_token, public_key):
 	url = f'https://api.github.com/repos/IDIDIR/IPM/issues/{pub_keys}/comments?access_token={access_token}'
 	msg = json.dumps({"body": public_key})
 	msg = msg.encode('utf-8') 										# string to bytes
+	print(msg)
 	req = urllib.request.Request(url, msg)
 	try: res = urllib.request.urlopen(req)
 	except urllib.error.URLError as e:
@@ -237,6 +239,7 @@ def main():
 		print('Selfkeys don\'t found.')
 		selfkey_generate()
 		reread_config()
+		selfkey_publish()
 		main()
 	elif not (roster_init()):
 		print('Contacts haven\'t been loaded.')
