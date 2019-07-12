@@ -136,7 +136,7 @@ def CreateMessage():
 	# send public_2 over GitHub (recipient)
 	message = input('Private message text: ')
 	# secure encode
-	eMessage = Encrypt(message)
+	eMessage = Encrypt(message,receiver)
 	# github api write comment
 	link = PostMessage(config.issue_id['enc_msgs'], config.access_token, header + eMessage)
 	print(link)
@@ -205,11 +205,11 @@ def PostMessage(enc_msgs, access_token, eMessage):
 	return 'oke'
 
 # encrypt single message with public_2 (sender)
-def Encrypt(message):
+def Encrypt(message,receiver):
 	# more corrected load public, no read local
 	# public_file = "./keys/public.pem"
 	# public_key = open(public_file,"r").read()
-	public_key = CONTACTS[SELFNAME]
+	public_key = CONTACTS[receiver]
 	public_key = RSA.importKey(public_key)
 	public_key = PKCS1_OAEP.new(public_key)
 	eMessage = message.encode('utf-8')						# 0
