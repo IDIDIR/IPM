@@ -11,6 +11,7 @@ from base64 import b64decode,b64encode
 # import additional libs
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP as PKCS1_OAEP
+from PyInquirer import style_from_dict, Token, prompt
 # import configs
 import config
 
@@ -169,18 +170,19 @@ def ShowMessages(messages, sender):
 	print(f'From: {sender}')
 	{ print(f'{message["date"]}\t{message["text"]}') for message in messages }
 
-# func for refact
+# user-frendly interface for select contact
 def	ChooseContact(contacts):
-	print('Your registred contacts:')
-	# javascriptostailovie zamashki onelove
-	{ print(sender, end = ' / ') for sender in CONTACTS }
-	print('back')	# kostyle
-	username = input('Enter name of your contact: ')
-	if(username == 'back'): main()
-	if(username not in CONTACTS):
-		return False
-	else:
-		return username
+	# kostyle
+	contacts.update({'back': ''})
+	registred_contacts = {
+		'type': 'list',
+		'name': 'contacts',
+		'message': 'Select your contact:',
+		'choices': contacts
+	}
+	answers = prompt(registred_contacts)
+	if(answers['contacts'] == 'back'): main()	#
+	return answers['contacts']
 
 # github api load comment in enc_msgs issue
 def GetMessages(enc_msgs, access_token):
@@ -232,6 +234,17 @@ def Decrypt(eMessage):
 		message = f'! {eMessage}'
 	return message
 
+# user-frendly interface for select actions
+def ChooseMenuItem():
+	menu_items = {
+		'type': 'list',
+		'name': 'items',
+		'message': 'Select menu item:',
+		'choices': ['Post', 'Load', 'Exit', 'Quit', 'Close', 'Kill']
+	}
+	answers = prompt(menu_items)
+	return answers['items']
+
 # general algorithm
 def main():
 	if not (True): pass
@@ -252,14 +265,14 @@ def main():
 		input()
 		main()
 	else:
-		mode = input('Post / Load / Exit / Quit / Close / Kill: ').lower()
+		mode = ChooseMenuItem()
 		# switch case break foo bazat lorem ipsum
-		if (mode == 'post'): 	CreateMessage()
-		if (mode == 'load'): 	LoadMessages()
-		if (mode == 'exit'): 	sys.exit(1)
-		if (mode == 'quit'): 	sys.exit(1)
-		if (mode == 'close'): sys.exit(1)
-		if (mode == 'kill'): 	sys.exit(1)
+		if (mode == 'Post'): 	CreateMessage()
+		if (mode == 'Load'): 	LoadMessages()
+		if (mode == 'Exit'): 	sys.exit(1)
+		if (mode == 'Quit'): 	sys.exit(1)
+		if (mode == 'Close'): sys.exit(1)
+		if (mode == 'Kill'): 	sys.exit(1)
 
 if __name__ == '__main__':
 	main()
@@ -276,9 +289,3 @@ if __name__ == '__main__':
 
 # tmp = {raw: singleComment(raw) for raw in tmp}
 # tmp = {d.pop(singleComment(raw)) for raw in tmp}
-
-# tag_PM = "./temp_em.txt"
-# open(tag_PM,"w").write(message.decode('utf-8'))
-
-# tag_KEYS = "./temp_pk.txt"
-# open(tag_KEYS,"w").write(public_key)
